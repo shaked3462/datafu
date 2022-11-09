@@ -110,7 +110,7 @@ def broadcast_join_skewed(not_skewed_df, skewed_df, join_col, number_of_custs_to
     :param join_col: join column
     :param number_of_custs_to_broadcast: number of custs to broadcast
     :param filter_cnt: filter out unskewed rows from the boardcast to ease limit calculation
-    :param join_type: spark join type
+    :param join_type: join type
     :return: DataFrame representing the data after the operation
     """
     jdf = _get_utils(skewed_df).broadcastJoinSkewed(not_skewed_df._jdf, skewed_df._jdf, join_col, number_of_custs_to_broadcast, filter_cnt, join_type)
