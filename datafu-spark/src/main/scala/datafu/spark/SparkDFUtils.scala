@@ -180,6 +180,9 @@ object SparkDFUtils {
     val w = Window.partitionBy(groupCol).orderBy(orderCols: _*)
     df.withColumn("rn", row_number.over(w)).where(col("rn") <= n).drop("rn")
   }
+  import scala.language.implicitConversions
+
+  implicit def columnToSeq(c: Column): Seq[Column] = Seq(c)
 
   /**
     * Used to get the 'latest' record (after ordering according to the provided order columns)
@@ -200,25 +203,32 @@ object SparkDFUtils {
     * @return DataFrame representing the data after the operation
     */
   def dedupWithCombiner(df: DataFrame,
-                        groupCol: Column,
-                        orderByCol: Column,
+                        groupCol: Seq[Column],
+                        orderByCol: Seq[Column],
                         desc: Boolean = true,
                         moreAggFunctions: Seq[Column] = Nil,
                         columnsFilter: Seq[String] = Nil,
                         columnsFilterKeep: Boolean = true): DataFrame = {
+
+//    val groupCols = if (groupCol.isLeft) Seq(Left(groupCol)) else Right(groupCol)
+//    val orderByCols = if (orderByCol.isLeft) Seq(Left(orderByCol)) else Right(orderByCol)
+
+    val df2 = df.withColumn("groupCol", concat_ws("-", groupCol:_*))
+                .withColumn("orderByCol", concat_ws("-", orderByCol:_*))
+
     val newDF =
       if (columnsFilter == Nil) {
-        df.withColumn("sort_by_column", orderByCol)
+        df2.withColumn("sort_by_column", col("orderByCol"))
       } else {
         if (columnsFilterKeep) {
-          df.withColumn("sort_by_column", orderByCol)
+          df2.withColumn("sort_by_column", col("orderByCol"))
             .select("sort_by_column", columnsFilter: _*)
         } else {
-          df.select(
-            df.columns
+          df2.select(
+            df2.columns
               .filter(colName => !columnsFilter.contains(colName))
               .map(colName => new Column(colName)): _*)
-            .withColumn("sort_by_column", orderByCol)
+            .withColumn("sort_by_column", col("orderByCol"))
         }
       }
 
@@ -226,8 +236,8 @@ object SparkDFUtils {
       if (desc) SparkOverwriteUDAFs.maxValueByKey(_: Column, _: Column)
       else SparkOverwriteUDAFs.minValueByKey(_: Column, _: Column)
 
-    val df2 = newDF
-      .groupBy(groupCol.as("group_by_col"))
+    val df3 = newDF
+      .groupBy(col("groupCol").as("group_by_col"))
       .agg(aggFunc(expr("sort_by_column"), expr("struct(sort_by_column, *)"))
              .as("h1"),
            struct(lit(1).as("lit_placeholder_col") +: moreAggFunctions: _*)
@@ -235,8 +245,40 @@ object SparkDFUtils {
       .selectExpr("h2.*", "h1.*")
       .drop("lit_placeholder_col")
       .drop("sort_by_column")
-    df2
+      .drop("groupCol")
+      .drop("orderByCol")
+    df3
   }
+
+//  /**
+//    * Used to get the 'latest' record (after ordering according to the provided order columns)
+//    * in each group.
+//    * the same functionality as {@link #dedupWithCombiner}, but allows usage of multiple keys
+//    *
+//    * @param df DataFrame to operate on
+//    * @param groupCols columns to group by the records
+//    * @param orderByCols columns to order the records according to
+//    * @param desc have the order as desc
+//    * @param moreAggFunctions more aggregate functions
+//    * @param columnsFilter columns to filter
+//    * @param columnsFilterKeep indicates whether we should filter the selected columns 'out'
+//    *                          or alternatively have only those columns in the result
+//    * @return DataFrame representing the data after the operation
+//    */
+//  def dedupWithCombiner(df: DataFrame,
+//                        groupCols: Seq[Column],
+//                        orderByCols: Seq[Column],
+//                        desc: Boolean = true,
+//                        moreAggFunctions: Seq[Column] = Nil,
+//                        columnsFilter: Seq[String] = Nil,
+//                        columnsFilterKeep: Boolean = true
+//                       ): DataFrame = {
+//    val df2 = df.withColumn("groupCol", concat_ws("-", groupCols:_*))
+//                .withColumn("orderByCol", concat_ws("-", orderByCols:_*))
+//    dedupWithCombiner(df2, col("groupCol"), col("orderByCol"), desc, moreAggFunctions, columnsFilter, columnsFilterKeep)
+//        .drop("groupCol")
+//        .drop("orderByCol")
+//  }
 
   /**
     * Returns a DataFrame with the given column (should be a StructType)

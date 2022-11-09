@@ -68,6 +68,7 @@ def dedup_with_combiner(df, group_col, order_by_col, desc = True, columns_filter
     :return: DataFrame representing the data after the operation
     """
     jdf = _get_utils(df).dedupWithCombiner(df._jdf, group_col._jc, order_by_col._jc, desc, columns_filter, columns_filter_keep)
+    # TODO: need to add something here to support the overloading?
     return DataFrame(jdf, df.sql_ctx)
 
 

@@ -54,6 +54,20 @@ object DataFrameOps {
                           columnsFilter,
                           columnsFilterKeep)
 
+    def dedupWithCombiner(groupCols: Seq[Column],
+                          orderByCols: Seq[Column],
+                          desc: Boolean = true,
+                          moreAggFunctions: Seq[Column] = Nil,
+                          columnsFilter: Seq[String] = Nil,
+                          columnsFilterKeep: Boolean = true): DataFrame =
+      SparkDFUtils.dedupWithCombiner(df,
+                          groupCols,
+                          orderByCols,
+                          desc,
+                          moreAggFunctions,
+                          columnsFilter,
+                          columnsFilterKeep)
+
     def flatten(colName: String): DataFrame = SparkDFUtils.flatten(df, colName)
 
     def changeSchema(newScheme: String*): DataFrame =
