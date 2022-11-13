@@ -43,7 +43,7 @@ object DataFrameOps {
       SparkDFUtils.dedupTopN(df, n, groupCol, orderCols: _*)
 
     def dedupWithCombiner(groupCol: Seq[Column],
-                          orderByCol: Column,
+                          orderByCol: Seq[Column],
                           desc: Boolean = true,
                           moreAggFunctions: Seq[Column] = Nil,
                           columnsFilter: Seq[String] = Nil,

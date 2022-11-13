@@ -53,8 +53,8 @@ class SparkDFUtilsBridge {
   }
 
   def dedupWithCombiner(df: DataFrame,
-             groupCol: Column,
-             orderByCol: Column,
+             groupCol: Seq[Column],
+             orderByCol: Seq[Column],
              desc: Boolean,
              columnsFilter: JavaList[String],
              columnsFilterKeep: Boolean): DataFrame = {
@@ -203,24 +203,24 @@ object SparkDFUtils {
     */
   def dedupWithCombiner(df: DataFrame,
                         groupCol: Seq[Column],
-                        orderByCol: Column,
+                        orderByCol: Seq[Column],
                         desc: Boolean = true,
                         moreAggFunctions: Seq[Column] = Nil,
                         columnsFilter: Seq[String] = Nil,
                         columnsFilterKeep: Boolean = true): DataFrame = {
     val newDF =
       if (columnsFilter == Nil) {
-        df.withColumn("sort_by_column", orderByCol)
+        df.withColumn("sort_by_column", struct(orderByCol: _*))
       } else {
         if (columnsFilterKeep) {
-          df.withColumn("sort_by_column", orderByCol)
+          df.withColumn("sort_by_column", struct(orderByCol: _*))
             .select("sort_by_column", columnsFilter: _*)
         } else {
           df.select(
             df.columns
               .filter(colName => !columnsFilter.contains(colName))
               .map(colName => new Column(colName)): _*)
-            .withColumn("sort_by_column", orderByCol)
+            .withColumn("sort_by_column", struct(orderByCol: _*))
         }
       }
 
