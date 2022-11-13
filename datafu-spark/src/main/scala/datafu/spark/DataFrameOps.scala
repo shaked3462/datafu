@@ -19,6 +19,7 @@
 package datafu.spark
 
 import org.apache.spark.sql.{Column, DataFrame}
+import scala.language.implicitConversions
 
 /**
  * implicit class to enable easier usage e.g:
@@ -32,6 +33,7 @@ import org.apache.spark.sql.{Column, DataFrame}
  */
 object DataFrameOps {
 
+  implicit def columnToColumns(c: Column): Seq[Column] = Seq(c)
   implicit class someDataFrameUtils(df: DataFrame) {
 
     def dedupWithOrder(groupCol: Column, orderCols: Column*): DataFrame =
@@ -40,7 +42,7 @@ object DataFrameOps {
     def dedupTopN(n: Int, groupCol: Column, orderCols: Column*): DataFrame =
       SparkDFUtils.dedupTopN(df, n, groupCol, orderCols: _*)
 
-    def dedupWithCombiner(groupCol: Column,
+    def dedupWithCombiner(groupCol: Seq[Column],
                           orderByCol: Column,
                           desc: Boolean = true,
                           moreAggFunctions: Seq[Column] = Nil,
@@ -49,20 +51,6 @@ object DataFrameOps {
       SparkDFUtils.dedupWithCombiner(df,
                           groupCol,
                           orderByCol,
-                          desc,
-                          moreAggFunctions,
-                          columnsFilter,
-                          columnsFilterKeep)
-
-    def dedupWithCombiner(groupCols: Seq[Column],
-                          orderByCols: Seq[Column],
-                          desc: Boolean = true,
-                          moreAggFunctions: Seq[Column] = Nil,
-                          columnsFilter: Seq[String] = Nil,
-                          columnsFilterKeep: Boolean = true): DataFrame =
-      SparkDFUtils.dedupWithCombiner(df,
-                          groupCols,
-                          orderByCols,
                           desc,
                           moreAggFunctions,
                           columnsFilter,

@@ -111,27 +111,27 @@ class DataFrameOpsTests extends FunSuite with DataFrameSuiteBase {
     assertDataFrameEquals(expectedComplex, actual)
   }
 
-  test("test_dedup2_by_multi_column") {
-    val df = sqlContext
-      .createDataFrame(
-        List(("a", "a", 1, 2, "aa12"),
-          ("a", "a", 1, 1, "aa11"),
-          ("a", "a", 2, 1, "aa21"),
-          ("a", "b", 3, 2, "ab32"),
-          ("b", "a", 1, 1, "ba11")))
-      .toDF("col_grp1", "col_grp2", "col_ord1", "col_ord2", "col_str")
-
-    val actual = df.dedupWithCombiner(List($"col_grp1", $"col_grp2"),
-                                      List($"col_ord1", $"col_ord2"),
-                                      desc = false)
-
-    val expectedMulti: DataFrame = sqlContext.createDataFrame(
-      List(("a", "a", 1, 1, "aa11"),
-           ("a", "b", 3, 2, "ab32"),
-           ("b", "a", 1, 1, "ba11")))
-      .toDF("col_grp1", "col_grp2", "col_ord1", "col_ord2", "col_str")
-    assertDataFrameEquals(expectedMulti, actual)
-  }
+//  test("test_dedup2_by_multi_column") {
+//    val df = sqlContext
+//      .createDataFrame(
+//        List(("a", "a", 1, 2, "aa12"),
+//          ("a", "a", 1, 1, "aa11"),
+//          ("a", "a", 2, 1, "aa21"),
+//          ("a", "b", 3, 2, "ab32"),
+//          ("b", "a", 1, 1, "ba11")))
+//      .toDF("col_grp1", "col_grp2", "col_ord1", "col_ord2", "col_str")
+//
+//    val actual = df.dedupWithCombiner(List($"col_grp1", $"col_grp2"),
+//                                      List($"col_ord1", $"col_ord2"),
+//                                      desc = false)
+//
+//    val expectedMulti: DataFrame = sqlContext.createDataFrame(
+//      List(("a", "a", 1, 1, "aa11"),
+//           ("a", "b", 3, 2, "ab32"),
+//           ("b", "a", 1, 1, "ba11")))
+//      .toDF("col_grp1", "col_grp2", "col_ord1", "col_ord2", "col_str")
+//    assertDataFrameEquals(expectedMulti, actual)
+//  }
 
   case class Inner(col_grp: String, col_ord: Int)
 
