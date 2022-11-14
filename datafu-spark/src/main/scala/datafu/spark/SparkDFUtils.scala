@@ -231,13 +231,14 @@ object SparkDFUtils {
     val df2 = newDF
       .groupBy(groupCol:_*)
       .agg(aggFunc(expr("sort_by_column"), expr("struct(sort_by_column, *)"))
-             .as("h1"),
-           struct(lit(1).as("lit_placeholder_col") +: moreAggFunctions: _*)
-             .as("h2"))
-      .selectExpr("h2.*", "h1.*")
+        .as("h1"),
+        struct(lit(1).as("lit_placeholder_col") +: moreAggFunctions: _*)
+          .as("h2"))
+      .selectExpr("h1.*", "h2.*")
       .drop("lit_placeholder_col")
       .drop("sort_by_column")
-    df2
+    val ns = StructType((df.schema++df2.schema.filter(s2 => !df.schema.map(_.name).contains(s2.name))).toList)
+    df2.sparkSession.createDataFrame(df2.rdd,ns)
   }
 
   /**
