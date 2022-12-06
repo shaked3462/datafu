@@ -98,6 +98,44 @@ class DataFrameOpsTests extends FunSuite with DataFrameSuiteBase {
     assertDataFrameEquals(expectedByStringDf, actual)
   }
 
+  test("dedup2_with_filter") {
+
+    val df = sqlContext.createDataFrame(
+      Seq(("a", 2, "aa12", "a"),
+        ("a", 1, "aa11", "a"),
+        ("b", 2, "ab32", "a"),
+        ("b", 1, "ba11", "a"))
+    ).toDF("col_grp", "col_ord", "col_str", "filter_col")
+
+    // Test case 1 - filter keep false
+    val actual1 = df.dedupWithCombiner($"col_grp",
+      $"col_ord",
+      desc = false,
+      columnsFilter = List("filter_col"),
+      columnsFilterKeep = false)
+
+    val expectedFilter1: DataFrame = sqlContext.createDataFrame(
+      Seq(("a", 1, "aa11"),
+        ("b", 1, "ba11"))
+    ).toDF("col_grp", "col_ord", "col_str")
+
+    assertDataFrameNoOrderEquals(expectedFilter1, actual1)
+
+    // Test case 2 - filter keep true
+    val actual2 = df.dedupWithCombiner($"col_grp",
+      $"col_ord",
+      desc = false,
+      columnsFilter = List("col_grp", "col_ord", "filter_col"),
+      columnsFilterKeep = true)
+
+    val expectedFilter2: DataFrame = sqlContext.createDataFrame(
+      Seq(("a", 1, "a"),
+        ("b", 1, "a"))
+    ).toDF("col_grp", "col_ord", "filter_col")
+
+    assertDataFrameNoOrderEquals(expectedFilter2, actual2)
+  }
+
   test("test_dedup2_by_complex_column") {
 
     val actual = inputDataFrame.dedupWithCombiner($"col_grp",
@@ -114,16 +152,18 @@ class DataFrameOpsTests extends FunSuite with DataFrameSuiteBase {
   test("test_dedup2_by_multi_column") {
 
     val df = sqlContext.createDataFrame(
-          Seq(("a", "a", 1, 2, "aa12"),
-            ("a", "a", 1, 1, "aa11"),
-            ("a", "a", 2, 1, "aa21"),
-            ("a", "b", 3, 2, "ab32"),
-            ("b", "a", 1, 1, "ba11"))
-        ).toDF("col_grp1", "col_grp2", "col_ord1", "col_ord2", "col_str")
+          Seq(("a", "a", 1, 2, "aa12", "a"),
+            ("a", "a", 1, 1, "aa11", "a"),
+            ("a", "a", 2, 1, "aa21", "a"),
+            ("a", "b", 3, 2, "ab32", "a"),
+            ("b", "a", 1, 1, "ba11", "a"))
+        ).toDF("col_grp1", "col_grp2", "col_ord1", "col_ord2", "col_str", "col_to_ignore")
 
     val actual = df.dedupWithCombiner(List($"col_grp1", $"col_grp2"),
                                       List($"col_ord1", $"col_ord2"),
-                                      desc = false)
+                                      desc = false,
+                                      columnsFilter = List("col_to_ignore"),
+                                      columnsFilterKeep = false)
 
     val expectedMulti: DataFrame = sqlContext.createDataFrame(
       Seq(("a", "a", 1, 1, "aa11"),

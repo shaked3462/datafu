@@ -67,7 +67,9 @@ def dedup_with_combiner(df, group_col, order_by_col, desc = True, columns_filter
 *                          those columns in the result
     :return: DataFrame representing the data after the operation
     """
-    jdf = _get_utils(df).dedupWithCombiner(df._jdf, group_col._jc, order_by_col._jc, desc, columns_filter, columns_filter_keep)
+    group_col = group_col if isinstance(group_col, list) else [group_col]
+    order_by_col = order_by_col if isinstance(order_by_col, list) else [order_by_col]
+    jdf = _get_utils(df).dedupWithCombiner(df._jdf, _cols_to_java_cols(group_col), _cols_to_java_cols(order_by_col), desc, columns_filter, columns_filter_keep)
     return DataFrame(jdf, df.sql_ctx)
 
 
@@ -99,7 +101,7 @@ def join_skewed(df_left, df_right, join_exprs, num_shards = 30, join_type="inner
     return DataFrame(jdf, df_left.sql_ctx)
 
 
-def broadcast_join_skewed(not_skewed_df, skewed_df, join_col, number_of_custs_to_broadcast, filter_cnt):
+def broadcast_join_skewed(not_skewed_df, skewed_df, join_col, number_of_custs_to_broadcast, filter_cnt, join_type):
     """
     Suitable to perform a join in cases when one DF is skewed and the other is not skewed.
     splits both of the DFs to two parts according to the skewed keys.
@@ -110,6 +112,7 @@ def broadcast_join_skewed(not_skewed_df, skewed_df, join_col, number_of_custs_to
     :param join_col: join column
     :param number_of_custs_to_broadcast: number of custs to broadcast
     :param filter_cnt: filter out unskewed rows from the boardcast to ease limit calculation
+    :param join_type: join type
     :return: DataFrame representing the data after the operation
     """
     jdf = _get_utils(skewed_df).broadcastJoinSkewed(not_skewed_df._jdf, skewed_df._jdf, join_col, number_of_custs_to_broadcast, filter_cnt, join_type)

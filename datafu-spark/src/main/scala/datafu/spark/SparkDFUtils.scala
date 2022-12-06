@@ -53,16 +53,18 @@ class SparkDFUtilsBridge {
   }
 
   def dedupWithCombiner(df: DataFrame,
-             groupCol: Seq[Column],
-             orderByCol: Seq[Column],
+             groupCol: JavaList[Column],
+             orderByCol: JavaList[Column],
              desc: Boolean,
              columnsFilter: JavaList[String],
              columnsFilterKeep: Boolean): DataFrame = {
     val columnsFilter_converted = convertJavaListToSeq(columnsFilter)
+    val groupCol_converted = convertJavaListToSeq(groupCol)
+    val orderByCol_converted = convertJavaListToSeq(orderByCol)
     SparkDFUtils.dedupWithCombiner(
       df = df,
-      groupCol = groupCol,
-      orderByCol = orderByCol,
+      groupCol = groupCol_converted,
+      orderByCol = orderByCol_converted,
       desc = desc,
       moreAggFunctions = Nil,
       columnsFilter = columnsFilter_converted,
@@ -237,7 +239,9 @@ object SparkDFUtils {
       .selectExpr("h1.*", "h2.*")
       .drop("lit_placeholder_col")
       .drop("sort_by_column")
-    val ns = StructType((df.schema++df2.schema.filter(s2 => !df.schema.map(_.name).contains(s2.name))).toList)
+    val ns = StructType((df.schema++df2.schema.filter(s2 => !df.schema.map(_.name).contains(s2.name)))
+      .filter(s2 => columnsFilter == Nil || (columnsFilterKeep && columnsFilter.contains(s2.name)) || (!columnsFilterKeep && !columnsFilter.contains(s2.name))).toList)
+
     df2.sparkSession.createDataFrame(df2.rdd,ns)
   }
 
